@@ -5,11 +5,11 @@ Installation
 ============
 Install [torch](https://pytorch.org/get-started/locally/)
 
-.. code:: shell
-
+```
     git clone https://github.com/LinghengMeng/LSTM-TD3.git
     cd LSTM-TD3
     pip install -e .
+```
 
 Run
 ============
