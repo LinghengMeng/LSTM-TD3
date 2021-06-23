@@ -10,14 +10,13 @@ import joblib
 import shutil
 import numpy as np
 import pandas as pd
-import tensorflow as tf
+# import tensorflow as tf
 import torch
 import os.path as osp, time, atexit, os
 import warnings
-from utils.tools import statistics_scalar
-from utils.serialization_utils import convert_json
-from user_config import DEFAULT_DATA_DIR, FORCE_DATESTAMP, \
-                               DEFAULT_SHORTHAND, WAIT_BEFORE_LAUNCH
+from lstm_td3.utils.tools import statistics_scalar
+from lstm_td3.utils.serialization_utils import convert_json
+from lstm_td3.user_config import DEFAULT_DATA_DIR, FORCE_DATESTAMP
 
 color2num = dict(
     gray=30,
@@ -44,32 +43,32 @@ def colorize(string, color, bold=False, highlight=False):
     if bold: attr.append('1')
     return '\x1b[%sm%s\x1b[0m' % (';'.join(attr), string)
 
-def restore_tf_graph(sess, fpath):
-    """
-    Loads graphs saved by Logger.
-
-    Will output a dictionary whose keys and values are from the 'inputs' 
-    and 'outputs' dict you specified with logger.setup_tf_saver().
-
-    Args:
-        sess: A Tensorflow session.
-        fpath: Filepath to save directory.
-
-    Returns:
-        A dictionary mapping from keys to tensors in the computation graph
-        loaded from ``fpath``. 
-    """
-    tf.saved_model.loader.load(
-                sess,
-                [tf.saved_model.tag_constants.SERVING],
-                fpath
-            )
-    model_info = joblib.load(osp.join(fpath, 'model_info.pkl'))
-    graph = tf.get_default_graph()
-    model = dict()
-    model.update({k: graph.get_tensor_by_name(v) for k,v in model_info['inputs'].items()})
-    model.update({k: graph.get_tensor_by_name(v) for k,v in model_info['outputs'].items()})
-    return model
+# def restore_tf_graph(sess, fpath):
+#     """
+#     Loads graphs saved by Logger.
+#
+#     Will output a dictionary whose keys and values are from the 'inputs'
+#     and 'outputs' dict you specified with logger.setup_tf_saver().
+#
+#     Args:
+#         sess: A Tensorflow session.
+#         fpath: Filepath to save directory.
+#
+#     Returns:
+#         A dictionary mapping from keys to tensors in the computation graph
+#         loaded from ``fpath``.
+#     """
+#     tf.saved_model.loader.load(
+#                 sess,
+#                 [tf.saved_model.tag_constants.SERVING],
+#                 fpath
+#             )
+#     model_info = joblib.load(osp.join(fpath, 'model_info.pkl'))
+#     graph = tf.get_default_graph()
+#     model = dict()
+#     model.update({k: graph.get_tensor_by_name(v) for k,v in model_info['inputs'].items()})
+#     model.update({k: graph.get_tensor_by_name(v) for k,v in model_info['outputs'].items()})
+#     return model
 
 
 # def statistics_scalar(x, with_min_and_max=False):
@@ -288,48 +287,48 @@ class Logger:
             joblib.dump(state_dict, osp.join(self.output_dir, fname))
         except:
             self.log('Warning: could not pickle state_dict.', color='red')
-        if hasattr(self, 'tf_saver_elements'):
-            self._tf_simple_save(itr)
+        # if hasattr(self, 'tf_saver_elements'):
+        #     self._tf_simple_save(itr)
         if hasattr(self, 'pytorch_saver_elements'):
             self._pytorch_simple_save(itr)
 
-    def setup_tf_saver(self, sess, inputs, outputs):
-        """
-        Set up easy model saving for tensorflow.
-
-        Call once, after defining your computation graph but before training.
-
-        Args:
-            sess: The Tensorflow session in which you train your computation
-                graph.
-
-            inputs (dict): A dictionary that maps from keys of your choice
-                to the tensorflow placeholders that serve as inputs to the 
-                computation graph. Make sure that *all* of the placeholders
-                needed for your outputs are included!
-
-            outputs (dict): A dictionary that maps from keys of your choice
-                to the outputs from your computation graph.
-        """
-        self.tf_saver_elements = dict(session=sess, inputs=inputs, outputs=outputs)
-        self.tf_saver_info = {'inputs': {k:v.name for k,v in inputs.items()},
-                              'outputs': {k:v.name for k,v in outputs.items()}}
-
-    def _tf_simple_save(self, itr=None):
-        """
-        Uses simple_save to save a trained model, plus info to make it easy
-        to associated tensors to variables after restore. 
-        """
-        assert hasattr(self, 'tf_saver_elements'), \
-            "First have to setup saving with self.setup_tf_saver"
-        fpath = 'tf1_save' + ('%d'%itr if itr is not None else '')
-        fpath = osp.join(self.output_dir, fpath)
-        if osp.exists(fpath):
-            # simple_save refuses to be useful if fpath already exists,
-            # so just delete fpath if it's there.
-            shutil.rmtree(fpath)
-        tf.saved_model.simple_save(export_dir=fpath, **self.tf_saver_elements)
-        joblib.dump(self.tf_saver_info, osp.join(fpath, 'model_info.pkl'))
+    # def setup_tf_saver(self, sess, inputs, outputs):
+    #     """
+    #     Set up easy model saving for tensorflow.
+    #
+    #     Call once, after defining your computation graph but before training.
+    #
+    #     Args:
+    #         sess: The Tensorflow session in which you train your computation
+    #             graph.
+    #
+    #         inputs (dict): A dictionary that maps from keys of your choice
+    #             to the tensorflow placeholders that serve as inputs to the
+    #             computation graph. Make sure that *all* of the placeholders
+    #             needed for your outputs are included!
+    #
+    #         outputs (dict): A dictionary that maps from keys of your choice
+    #             to the outputs from your computation graph.
+    #     """
+    #     self.tf_saver_elements = dict(session=sess, inputs=inputs, outputs=outputs)
+    #     self.tf_saver_info = {'inputs': {k:v.name for k,v in inputs.items()},
+    #                           'outputs': {k:v.name for k,v in outputs.items()}}
+    #
+    # def _tf_simple_save(self, itr=None):
+    #     """
+    #     Uses simple_save to save a trained model, plus info to make it easy
+    #     to associated tensors to variables after restore.
+    #     """
+    #     assert hasattr(self, 'tf_saver_elements'), \
+    #         "First have to setup saving with self.setup_tf_saver"
+    #     fpath = 'tf1_save' + ('%d'%itr if itr is not None else '')
+    #     fpath = osp.join(self.output_dir, fpath)
+    #     if osp.exists(fpath):
+    #         # simple_save refuses to be useful if fpath already exists,
+    #         # so just delete fpath if it's there.
+    #         shutil.rmtree(fpath)
+    #     tf.saved_model.simple_save(export_dir=fpath, **self.tf_saver_elements)
+    #     joblib.dump(self.tf_saver_info, osp.join(fpath, 'model_info.pkl'))
     
 
     def setup_pytorch_saver(self, what_to_save):

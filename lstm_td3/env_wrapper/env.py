@@ -1,9 +1,8 @@
 from copy import copy
-import pybullet_envs    # Needed for registering tasks in pybullet
 import gym
 import numpy as np
 from gym.wrappers.time_limit import TimeLimit
-from env_wrapper.pomdp_wrapper import POMDPWrapper
+from lstm_td3.env_wrapper.pomdp_wrapper import POMDPWrapper
 
 
 class TransparentWrapper(gym.Wrapper):

@@ -1,16 +1,16 @@
 from copy import deepcopy
 import numpy as np
-import pybulletgym      # To register tasks in PyBulletGym
+# import pybulletgym      # To register tasks in PyBulletGym
 import pybullet_envs    # To register tasks in PyBullet
 import gym
 import time
 import torch
 import torch.nn as nn
 from torch.optim import Adam
-from utils.logx import EpochLogger, setup_logger_kwargs, colorize
+from lstm_td3.utils.logx import EpochLogger, setup_logger_kwargs, colorize
 import itertools
-from env_wrapper.pomdp_wrapper import POMDPWrapper
-from env_wrapper.env import make_bullet_task
+from lstm_td3.env_wrapper.pomdp_wrapper import POMDPWrapper
+from lstm_td3.env_wrapper.env import make_bullet_task
 import os
 import os.path as osp
 import json
