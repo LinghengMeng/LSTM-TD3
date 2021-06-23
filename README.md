@@ -17,11 +17,11 @@ python .\lstm_td3\lstm_td3_main.py
 
 Tasks
 ============
-HalfCheetahBulletEnv-v0
-AntBulletEnv-v0
-HopperBulletEnv-v0
-Walker2DBulletEnv-v0
-InvertedPendulumBulletEnv-v0
-InvertedDoublePendulumBulletEnv-v0
-InvertedPendulumSwingupBulletEnv-v0
-ReacherBulletEnv-v0
+* HalfCheetahBulletEnv-v0
+* AntBulletEnv-v0
+* HopperBulletEnv-v0
+* Walker2DBulletEnv-v0
+* InvertedPendulumBulletEnv-v0
+* nvertedDoublePendulumBulletEnv-v0
+* InvertedPendulumSwingupBulletEnv-v0
+* ReacherBulletEnv-v0
