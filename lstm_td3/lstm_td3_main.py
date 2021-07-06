@@ -71,27 +71,30 @@ class ReplayBuffer:
         else:
             hist_obs = np.zeros([batch_size, max_hist_len, self.obs_dim])
             hist_act = np.zeros([batch_size, max_hist_len, self.act_dim])
+            hist_obs_len = max_hist_len * np.ones(batch_size)
             hist_obs2 = np.zeros([batch_size, max_hist_len, self.obs_dim])
             hist_act2 = np.zeros([batch_size, max_hist_len, self.act_dim])
-            hist_rew = np.zeros([batch_size, max_hist_len])
-            hist_done = np.zeros([batch_size, max_hist_len])
-            hist_len = max_hist_len * np.ones(batch_size)
+            hist_obs2_len = max_hist_len * np.ones(batch_size)
+
             # Extract history experiences before sampled index
             for i, id in enumerate(idxs):
                 hist_start_id = id - max_hist_len
                 if hist_start_id < 0:
                     hist_start_id = 0
-                # If exist done before the last experience (not include the done in id), start from the index next to the done.
+                # If exist done before the last experience (not including the done in id), start from the index next to the done.
                 if len(np.where(self.done_buf[hist_start_id:id] == 1)[0]) != 0:
                     hist_start_id = hist_start_id + (np.where(self.done_buf[hist_start_id:id] == 1)[0][-1]) + 1
                 hist_seg_len = id - hist_start_id
-                hist_len[i] = hist_seg_len
+                hist_obs_len[i] = hist_seg_len
                 hist_obs[i] = self.obs_buf[hist_start_id:id]
                 hist_act[i] = self.act_buf[hist_start_id:id]
+                if hist_seg_len == 0:
+                    hist_obs2_len[i] = 1
+                else:
+                    hist_obs2_len[i] = hist_seg_len
                 hist_obs2[i] = self.obs2_buf[hist_start_id:id]
                 hist_act2[i] = self.act_buf[hist_start_id+1:id+1]
-                hist_rew[i] = self.rew_buf[hist_start_id:id]
-                hist_done[i] = self.done_buf[hist_start_id:id]
+
         batch = dict(obs=self.obs_buf[idxs],
                      obs2=self.obs2_buf[idxs],
                      act=self.act_buf[idxs],
@@ -101,9 +104,8 @@ class ReplayBuffer:
                      hist_act=hist_act,
                      hist_obs2=hist_obs2,
                      hist_act2=hist_act2,
-                     hist_rew=hist_rew,
-                     hist_done=hist_done,
-                     hist_len=hist_len)
+                     hist_obs_len=hist_obs_len,
+                     hist_obs2_len=hist_obs2_len)
         return {k: torch.as_tensor(v, dtype=torch.float32) for k, v in batch.items()}
 #######################################################################################
 
@@ -535,15 +537,14 @@ def lstm_td3(resume_exp_dir=None,
     # Set up function for computing TD3 Q-losses
     def compute_loss_q(data):
         o, a, r, o2, d = data['obs'], data['act'], data['rew'], data['obs2'], data['done']
-        h_o, h_a, h_o2, h_a2, h_len = data['hist_obs'], data['hist_act'], data['hist_obs2'], data['hist_act2'], data[
-            'hist_len']
+        h_o, h_a, h_o2, h_a2, h_o_len, h_o2_len = data['hist_obs'], data['hist_act'], data['hist_obs2'], data['hist_act2'], data['hist_obs_len'], data['hist_obs2_len']
 
-        q1, q1_extracted_memory = ac.q1(o, a, h_o, h_a, h_len)
-        q2, q2_extracted_memory = ac.q2(o, a, h_o, h_a, h_len)
+        q1, q1_extracted_memory = ac.q1(o, a, h_o, h_a, h_o_len)
+        q2, q2_extracted_memory = ac.q2(o, a, h_o, h_a, h_o_len)
 
         # Bellman backup for Q functions
         with torch.no_grad():
-            pi_targ, _ = ac_targ.pi(o2, h_o2, h_a2, h_len)
+            pi_targ, _ = ac_targ.pi(o2, h_o2, h_a2, h_o2_len)
 
             # Target policy smoothing
             if use_target_policy_smooth:
@@ -555,8 +556,8 @@ def lstm_td3(resume_exp_dir=None,
                 a2 = pi_targ
 
             # Target Q-values
-            q1_pi_targ, _ = ac_targ.q1(o2, a2, h_o2, h_a2, h_len)
-            q2_pi_targ, _ = ac_targ.q2(o2, a2, h_o2, h_a2, h_len)
+            q1_pi_targ, _ = ac_targ.q1(o2, a2, h_o2, h_a2, h_o2_len)
+            q2_pi_targ, _ = ac_targ.q2(o2, a2, h_o2, h_a2, h_o2_len)
 
             if use_double_critic:
                 q_pi_targ = torch.min(q1_pi_targ, q2_pi_targ)
@@ -584,9 +585,9 @@ def lstm_td3(resume_exp_dir=None,
 
     # Set up function for computing TD3 pi loss
     def compute_loss_pi(data):
-        o, h_o, h_a, h_len = data['obs'], data['hist_obs'], data['hist_act'], data['hist_len']
-        a, a_extracted_memory = ac.pi(o, h_o, h_a, h_len)
-        q1_pi, _ = ac.q1(o, a, h_o, h_a, h_len)
+        o, h_o, h_a, h_o_len = data['obs'], data['hist_obs'], data['hist_act'], data['hist_obs_len']
+        a, a_extracted_memory = ac.pi(o, h_o, h_a, h_o_len)
+        q1_pi, _ = ac.q1(o, a, h_o, h_a, h_o_len)
         loss_info = dict(ActExtractedMemory=a_extracted_memory.mean(dim=1).detach().cpu().numpy())
         return -q1_pi.mean(), loss_info
 
