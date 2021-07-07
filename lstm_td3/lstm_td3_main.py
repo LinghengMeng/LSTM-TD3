@@ -65,9 +65,8 @@ class ReplayBuffer:
             hist_act = np.zeros([batch_size, 1, self.act_dim])
             hist_obs2 = np.zeros([batch_size, 1, self.obs_dim])
             hist_act2 = np.zeros([batch_size, 1, self.act_dim])
-            hist_rew = np.zeros([batch_size, 1])
-            hist_done = np.zeros([batch_size, 1])
-            hist_len = np.zeros(batch_size)
+            hist_obs_len = np.zeros(batch_size)
+            hist_obs2_len = np.zeros(batch_size)
         else:
             hist_obs = np.zeros([batch_size, max_hist_len, self.obs_dim])
             hist_act = np.zeros([batch_size, max_hist_len, self.act_dim])
@@ -88,6 +87,7 @@ class ReplayBuffer:
                 hist_obs_len[i] = hist_seg_len
                 hist_obs[i] = self.obs_buf[hist_start_id:id]
                 hist_act[i] = self.act_buf[hist_start_id:id]
+                # If the first experience of an episode is sampled, the hist lengths are different for obs and obs2.
                 if hist_seg_len == 0:
                     hist_obs2_len[i] = 1
                 else:
