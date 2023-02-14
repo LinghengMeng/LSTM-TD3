@@ -1,6 +1,5 @@
 from copy import deepcopy
 import numpy as np
-# import pybulletgym      # To register tasks in PyBulletGym
 import pybullet_envs    # To register tasks in PyBullet
 import gym
 import time
@@ -85,15 +84,15 @@ class ReplayBuffer:
                     hist_start_id = hist_start_id + (np.where(self.done_buf[hist_start_id:id] == 1)[0][-1]) + 1
                 hist_seg_len = id - hist_start_id
                 hist_obs_len[i] = hist_seg_len
-                hist_obs[i] = self.obs_buf[hist_start_id:id]
-                hist_act[i] = self.act_buf[hist_start_id:id]
+                hist_obs[i, :hist_seg_len, :] = self.obs_buf[hist_start_id:id]
+                hist_act[i, :hist_seg_len, :] = self.act_buf[hist_start_id:id]
                 # If the first experience of an episode is sampled, the hist lengths are different for obs and obs2.
                 if hist_seg_len == 0:
                     hist_obs2_len[i] = 1
                 else:
                     hist_obs2_len[i] = hist_seg_len
-                hist_obs2[i] = self.obs2_buf[hist_start_id:id]
-                hist_act2[i] = self.act_buf[hist_start_id+1:id+1]
+                hist_obs2[i, :hist_seg_len, :] = self.obs2_buf[hist_start_id:id]
+                hist_act2[i, :hist_seg_len, :] = self.act_buf[hist_start_id+1:id+1]
 
         batch = dict(obs=self.obs_buf[idxs],
                      obs2=self.obs2_buf[idxs],
