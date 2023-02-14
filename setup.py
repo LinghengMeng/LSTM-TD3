@@ -11,7 +11,7 @@ setup(
     version='0.1',
     install_requires=[
         'joblib',
-        'gym',
+        'gym<=0.17.3',
         'numpy',
         'pybullet',
         'torch',
